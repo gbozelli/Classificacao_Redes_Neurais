@@ -29,7 +29,7 @@ class Rede_Neural(object):
     '''Função de ativação do neurônio. No nosso
     caso, a função sigmoidal, multiplicada por uma constante
     para registrar melhor a saída (coeficientes de uma função)'''
-    a = np.array(10*(1/(1+np.exp(-1*(z)))))
+    a = np.array((1/(1+np.exp(-1*(z)))))
     return a
   
   def funcao_derivada(self, z):
@@ -90,9 +90,12 @@ class Rede_Neural(object):
 
   def treinamento(self, X,y,taxa_de_aprendizado,iteracoes):
     '''Treina a rede neural. O conjunto dos dados é injetado na rede
-    a cada iteração de forma aleatória, para evitar overfitting'''
-    self.descida_de_gradiente(X,y,iteracoes,taxa_de_aprendizado)
-    saida = self.saida(X,self.w[0],self.b[0])
+    a cada iteração de forma aleatória, para evitar overfitting'''  
+    for x in X:
+      self.descida_de_gradiente(x,y,iteracoes,taxa_de_aprendizado)
+
+  def teste(self, x):
+    saida = self.saida(x,self.w[0],self.b[0])
     for i in range(1,self.n_camadas):
       saida = self.saida(saida,self.w[i],self.b[i])
     return saida
@@ -106,12 +109,22 @@ b = 1.4
 X = center+sigma*np.random.rand(N,1)
 n = sigma_n*np.random.randn(N,1)
 Y = a*X+b+n
-points = []
-for x, y in zip(X,Y):
-  points.append(x)
-  points.append(y)
+points = [X,Y]
 points = np.transpose(points)[0]
-r = Rede_Neural([2*N,10,2])
-saida = r.treinamento(points,[a,b],0.0001,100000)
-print(saida)
 
+r = Rede_Neural([2,10,2])
+r.treinamento(points,[a,b],0.0000001,1000)
+
+N = 100
+center = 5
+sigma = 20
+sigma_n = 0.1
+a = 0.2
+b = 1
+X = center+sigma*np.random.rand(N,1)
+n = sigma_n*np.random.randn(N,1)
+Y = a*X+b+n
+points = [X,Y]
+points = np.transpose(points)[0]
+
+print(r.teste(X))
