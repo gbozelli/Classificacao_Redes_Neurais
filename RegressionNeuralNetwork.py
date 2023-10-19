@@ -13,7 +13,7 @@ class Network:
 
   def feedforward(self, a):
     for b, w in zip(self.bias, self.weight):
-      a = simgmoid_func(np.dot(np.transpose(w), a) + b)
+      a = identity_func(np.dot(np.transpose(w), a) + b)
     return a
 
   def SGD(self, data, epochs, batch_size, alpha):
@@ -36,13 +36,13 @@ class Network:
     alpha, b1, b2, epsilon = 10, 0.9, 0.999, 10e-8
     self.t += 1
     self.m_w = [b1 * m + (1 - b1) * g for m, g in zip(
-    self.m_w,grad_w)]
+      self.m_w,grad_w)]
     self.m_b = [b1 * m + (1 - b1) * g for m, g in zip(
-    self.m_b,grad_b)]
+      self.m_b,grad_b)]
     self.v_w = [b2 * v + (1 - b2) * g**2 for v, g in zip(
-    self.v_w,grad_w)]
+      self.v_w,grad_w)]
     self.v_b = [b2 * v + (1 - b2) * g**2 for v, g in zip(
-    self.v_b,grad_b)]
+      self.v_b,grad_b)]
     m_w_prev = [m/(1 - b1**self.t) for m in self.m_w]
     v_w_prev = [m/(1 - b2**self.t) for m in self.v_w]
     m_b_prev = [m/(1 - b1**self.t) for m in self.m_b]
@@ -51,7 +51,8 @@ class Network:
       m_w_prev,v_w_prev)]
     delta_b = [(alpha*m/(np.sqrt(v)+epsilon)) for m, v in zip(
       m_b_prev,v_b_prev)]
-    self.weight = [w-nw for w, nw in zip(self.weight, np.transpose(delta_w))]
+    self.weight = [w-nw for w, nw in zip(
+      self.weight, np.transpose(delta_w))]
     self.bias = [b-nb for b, nb in zip(self.bias, delta_b)]
     w.append(self.weight)
     b.append(self.bias)
@@ -62,8 +63,10 @@ class Network:
     x = np.column_stack([batch[0] for batch in mini_batch])
     y = np.column_stack([batch[1] for batch in mini_batch])
     grad_b, grad_w = self.backprop(x, y)
-    self.weight = [w-(alpha/len(mini_batch))*nw for w, nw in zip(self.weight, np.transpose(grad_w))]
-    self.bias = [b-(alpha/len(mini_batch))*nb for b, nb in zip(self.bias, grad_b)]
+    self.weight = [w-(alpha/len(mini_batch))*nw for w, nw in zip(
+      self.weight, np.transpose(grad_w))]
+    self.bias = [b-(alpha/len(mini_batch))*nb for b, nb in zip(
+      self.bias, grad_b)]
     w.append(self.weight)
     b.append(self.bias)
 
@@ -77,14 +80,14 @@ class Network:
     for b, w in zip(self.bias, self.weight):
       z = np.dot(np.transpose(w), activation)+b
       zs.append(z)
-      activation = simgmoid_func(z)
+      activation = identity_func(z)
       activations.append(activation)
-    deltas = self.cost_function(activations[-1], y) * sigmoid_prime(zs[-1])
+    deltas = self.cost_function(activations[-1], y) * identity_prime(zs[-1])
     grad_b[-1] = deltas.sum(axis=1).reshape((len(deltas), 1))
     grad_w[-1] = np.dot(deltas, activations[-2].transpose())
     for l in range(2, num_layers):
       z = zs[-l]
-      sp = sigmoid_prime(z)
+      sp = identity_prime(z)
       deltas = np.dot(self.weight[-l+1].transpose(), deltas) * sp
       grad_b[-l] = deltas.sum(axis=1).reshape((len(deltas), 1))
       grad_w[-l] = np.dot(deltas, activations[-l-1].transpose())
@@ -99,11 +102,11 @@ class Network:
   def cost_function(self, output, y):
     return (output-y)
 
-def simgmoid_func(z):
-  return 1.0/(1.0+np.exp(-z))
+def identity_func(z):
+  return z
 
-def sigmoid_prime(z):
-  return simgmoid_func(z)*(1-simgmoid_func(z))
+def identity_prime(z):
+  return np.ones(z.shape)
 
 c = []
 w = []
