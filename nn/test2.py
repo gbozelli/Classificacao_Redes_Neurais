@@ -16,7 +16,7 @@ training_data = [[x,y] for x,y in zip(X,Y)]
 Net = net.Network([2,1], 'sgd', ['sigmoid'])
 data_size = len(training_data)
 epochs = 100
-Net.train(training_data, epochs, data_size,10)
+Net.train(training_data, epochs, data_size,0.1)
 
 plt.subplot(121)
 plt.plot(Net.iterations,Net.train_cost, color='black',  label='Custo de treino')

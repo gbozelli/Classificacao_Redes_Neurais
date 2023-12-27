@@ -2,14 +2,15 @@ import random
 from matplotlib import pyplot as plt
 import numpy as np
 
-class Network:
+class Network1:
 
   def __init__(self, layers):
     self.layers = layers
-    self.bias = [np.ones((y, 1)) for y in layers[1:]]
+    self.bias = [np.random.rand(y, 1) for y in layers[1:]]
     self.weight = [np.random.rand(x, y) for x, y in zip(layers[:-1], layers[1:])]
     dw, db =[np.zeros(w.shape) for w in self.weight], [np.zeros(b.shape) for b in self.bias]
     self.t,self.m_w,self.m_b,self.v_w,self.v_b = 0,dw,db,dw,db
+    self.b, self.w, self.c, self.i =  [],[],[],[]
 
   def feedforward(self, a):
     for b, w in zip(self.bias, self.weight):
@@ -23,17 +24,17 @@ class Network:
       random.shuffle(data)
       mini_batches = [data[k:k+batch_size] for k in range(0, n, batch_size)]
       for mini_batch in mini_batches:
-        self.adam(mini_batch)
-      c.append(self.evaluate(data))
-      i.append(j)
+        self.update(mini_batch,alpha)
+      self.c.append(self.evaluate(data))
+      self.i.append(j)
 
-  def adam(self, mini_batch):
+  def adam(self, mini_batch,alpha):
     grad_b = [np.zeros(b.shape) for b in self.bias]
     grad_w = [np.zeros(w.shape) for w in self.weight]
     x = np.column_stack([batch[0] for batch in mini_batch])
     y = np.column_stack([batch[1] for batch in mini_batch])
     grad_b, grad_w = self.backprop(x, y)
-    alpha, b1, b2, epsilon = 10, 0.9, 0.999, 10e-8
+    b1, b2, epsilon = 0.9, 0.999, 10e-8
     self.t += 1
     self.m_w = [b1 * m + (1 - b1) * g for m, g in zip(
     self.m_w,grad_w)]
@@ -53,8 +54,8 @@ class Network:
       m_b_prev,v_b_prev)]
     self.weight = [w-nw for w, nw in zip(self.weight, np.transpose(delta_w))]
     self.bias = [b-nb for b, nb in zip(self.bias, delta_b)]
-    w.append(self.weight)
-    b.append(self.bias)
+    self.w.append(self.weight)
+    self.b.append(self.bias)
 
   def update(self, mini_batch, alpha):
     grad_b = [np.zeros(b.shape) for b in self.bias]
@@ -64,8 +65,8 @@ class Network:
     grad_b, grad_w = self.backprop(x, y)
     self.weight = [w-(alpha/len(mini_batch))*nw for w, nw in zip(self.weight, np.transpose(grad_w))]
     self.bias = [b-(alpha/len(mini_batch))*nb for b, nb in zip(self.bias, grad_b)]
-    w.append(self.weight)
-    b.append(self.bias)
+    self.w.append(self.weight)
+    self.b.append(self.bias)
 
   def backprop(self, x, y):
     num_layers = len(self.layers)-1
@@ -93,11 +94,12 @@ class Network:
   def evaluate(self, data):
     sum = 0
     for (x, y) in data:
-      sum += np.linalg.norm(self.feedforward(x)-y)**2
+      a = self.feedforward(x)
+      sum += np.linalg.norm(y*np.log(a)+(1-y)*np.log(1-a))**2
     return sum
 
   def cost_function(self, output, y):
-    return (output-y)
+    return (output-y)/((1-output)*output)
 
 def simgmoid_func(z):
   return 1.0/(1.0+np.exp(-z))
@@ -105,7 +107,50 @@ def simgmoid_func(z):
 def sigmoid_prime(z):
   return simgmoid_func(z)*(1-simgmoid_func(z))
 
+
 c = []
 w = []
 b = []
 i = []
+
+from sklearn.datasets import make_classification
+
+def NormalizeData(data):
+  return (data - np.min(data)) / (np.max(data) - np.min(data))
+
+X, Y = make_classification(n_samples=10,n_features=2,class_sep=10,n_redundant=0,n_informative=2,n_clusters_per_class=1)
+X1, X2 = np.transpose(X)[0], np.transpose(X)[1]
+X1, X2 = NormalizeData(X1),NormalizeData(X2)
+X = [(X1, X2) for X1, X2 in zip(X1,X2)]
+
+training_data = [[x,y] for x,y in zip(X,Y)]
+
+net = Network1([2,1])
+data_size = len(training_data)
+epochs = 100
+net.SGD(training_data, epochs, data_size,0.1)
+
+plt.figure(figsize=(13,5))
+plt.subplot(121)
+plt.plot(net.i,net.c, color='black',  label='Função de custo')
+plt.plot(net.i,np.array(np.transpose(net.w)[0][0]).reshape(epochs), color='blue',  label='Coeficiente W1')
+plt.plot(net.i,np.array(np.transpose(net.w)[0][1]).reshape(epochs), color='red',  label='Coeficiente W2',alpha=0.6)
+plt.plot(net.i,np.array(net.b).reshape(epochs), color='green',  label='Coeficiente B',alpha=0.6)
+plt.grid(True)
+plt.ylabel('Métricas de treino')
+plt.xlabel('Época')
+plt.title('Mínimo erro quadrático')
+plt.legend()
+
+w1 = net.weight[0][0][0]
+w2 = net.weight[0][1][0]
+b = net.bias[0][0][0]
+
+plt.subplot(122)
+plt.grid(True)
+plt.ylabel('Y')
+plt.xlabel('X')
+plt.scatter(X1, X2, c=Y)
+plt.plot(np.arange(0,1.1,0.1), -w1/w2*np.arange(0,1.1,0.1) - b/w2)
+plt.ylim(-0.1,1.1)
+plt.show()

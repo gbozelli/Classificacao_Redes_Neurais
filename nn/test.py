@@ -13,14 +13,12 @@ n = sigma_n*np.random.randn(N,1)
 Y = A*X+B+n
 
 training_data = [[x,y] for x,y in zip(X,Y)]
-net = nn.Network([1,1], 'sgd', ['linear'])
+net = nn.Network([1,1], 'adam', ['linear'])
 data_size = len(training_data)
 epochs = 100
-net.train(training_data, epochs, data_size, 0.001)
+net.train(training_data, epochs, data_size, 10)
 
 y_pred = np.array([net.feedforward(i) for i in X])
-print(net.weight)
-print(net.bias)
 
 plt.figure(figsize=(13,5))
 plt.subplot(121)
